@@ -140,9 +140,30 @@ void exec_cmd(struct cmd *cmd) {
 
         case PIPE: {
             // pipes two commands
-            //
-            // Your code here
-            printf("Pipes are not yet implemented\n");
+            int filedes[2];
+            pipe(filedes);
+
+            struct pipecmd *pcmd = (struct pipecmd *) cmd;
+
+            pid_t pid_a, pid_b;
+
+            if (!(pid_a = fork())) {
+                dup2(filedes[1], STDOUT_FILENO);
+                close(filedes[0]);
+                close(filedes[1]);
+                exec_cmd(pcmd->leftcmd);
+            }
+
+            if (!(pid_b = fork())) {
+                dup2(filedes[0], STDIN_FILENO);
+                close(filedes[0]);
+                close(filedes[1]);
+                exec_cmd(pcmd->rightcmd);
+            }
+            close(filedes[0]);
+            close(filedes[1]);
+            waitpid(pid_a, NULL, 0);
+            waitpid(pid_b, NULL, 0);
 
             // free the memory allocated
             // for the pipe tree structure
